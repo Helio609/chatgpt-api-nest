@@ -15,9 +15,9 @@ export type OpenaiResponse = {
 };
 
 export interface StreamData {
-  id: string;
-  delta: string;
-  finish_reason: string;
+  id?: string;
+  delta?: string;
+  finish_reason?: string;
 }
 
 @Injectable()
@@ -66,11 +66,6 @@ export class OpenaiService {
       },
       responseType: stream ? 'stream' : 'json',
       validateStatus: () => true,
-      proxy: {
-        host: '127.0.0.1',
-        port: 7890,
-        protocol: 'http',
-      },
     });
 
     /** TODO: there have many error type when openai server returns status code != 200 */
@@ -106,8 +101,12 @@ export class OpenaiService {
           /** exception will only raised in last chunk: data: [DONE] */
           const json = JSON.parse(data);
           if (!rId) rId = json.id;
-          if (!rFinishReason && json.choices[0].finish_reason)
-            rFinishReason = json.choices[0].finish_reason;
+          if (json.choices[0].finish_reason) {
+              rFinishReason = json.choices[0].finish_reason;
+              subject.next({
+                finish_reason: rFinishReason,
+              });
+          }
           if (!json.choices[0].delta.content) return;
           rContent += json.choices[0].delta.content;
           rCompletionTokens += 1;
