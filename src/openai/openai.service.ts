@@ -67,11 +67,6 @@ export class OpenAIService {
       },
       responseType: stream ? 'stream' : 'json',
       validateStatus: () => true,
-      proxy: {
-        host: '127.0.0.1',
-        port: 7890,
-        protocol: 'http'
-      }
     });
 
     /** TODO: there have many error type when openai server returns status code != 200 */
