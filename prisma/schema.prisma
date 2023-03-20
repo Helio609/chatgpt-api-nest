@@ -13,7 +13,7 @@ model User {
   password  String
   createdAt DateTime @default(now())
 
-  config Config?
+  config   Config?
   sessions Session[]
 
   @@map("users")
@@ -31,9 +31,10 @@ model Config {
 }
 
 model Session {
-  id    String @id
-  user_id Int
-  messages Json[]
+  id        String @id
+  user_id   Int
+  chat_name String
+  messages  Json[]
 
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
