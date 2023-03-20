@@ -104,7 +104,7 @@ export class ChatController {
   }
 
   @Get('history/:id')
-  getChatHistoryBySessionId(sessionId: string) {
+  getChatHistoryBySessionId(@Param('id') sessionId: string) {
     return this.chatService.getChatHistoryBySessionId(sessionId)
   }
 }

@@ -81,6 +81,6 @@ export class ChatService {
   }
 
   async getChatHistoryBySessionId(sessionId: string) {
-    return { messages: (await this.prisma.session.findUnique({ where: { id: sessionId } })).messages }
+    return await this.prisma.session.findUnique({ where: { id: sessionId }, select: { id: true, messages: true } })
   }
 }
