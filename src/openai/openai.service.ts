@@ -1,4 +1,4 @@
-import { get_encoding } from '@dqbd/tiktoken';
+import { get_encoding, TiktokenEncoding } from '@dqbd/tiktoken';
 import { Injectable } from '@nestjs/common';
 import { ReplaySubject } from 'rxjs';
 import { HttpService } from 'src/http/http.service';
@@ -17,11 +17,12 @@ export type OpenaiResponse = {
 export interface StreamData {
   id?: string;
   delta?: string;
+  /** only avalible in the last chunk of the stream */
   finish_reason?: string;
 }
 
 @Injectable()
-export class OpenaiService {
+export class OpenAIService {
   constructor(private readonly http: HttpService) {}
 
   async sendMessages(
@@ -34,21 +35,25 @@ export class OpenaiService {
     /** parpare the messages array to fit the token limit */
     /** perserve 1000 token for answering and 3000 token for the history */
     /** the message chain should be sorted in root -> chat_1 -> chat_2 -> ... */
+
+    /** encoding for gpt-3.5 */
     const enc = get_encoding('cl100k_base');
-    const tokenLengther = (content: string) =>
+    const getTokenSize = (content: string) =>
+    /** tested, it's equal to prompt token size which openai api returns */
       enc.encode(`${content}<|im_end|>`).length;
-    const tokenLengthes = messages.map((message) =>
-      tokenLengther(message.content),
+    const tokenSize = messages.map((message) =>
+      getTokenSize(message.content),
     );
-    const sumTokenLength = () =>
-      tokenLengthes.reduce(
+    const sumTokenSize = () =>
+      tokenSize.reduce(
         (accumulator, currentValue) => accumulator + currentValue,
       );
 
     /** I'm so lazy, but anyways */
-    while (sumTokenLength() > 3000) {
+    /** TODO: make it configurable */
+    while (sumTokenSize() > 3000) {
       /** remove the first message in every step until sum of token < 3000 */
-      tokenLengthes.shift();
+      tokenSize.shift();
       messages.shift();
     }
 
@@ -75,11 +80,13 @@ export class OpenaiService {
       );
 
     if (!stream) {
+      const data = response.data
+      const ans = data.choices[0]
       return {
-        id: response.data.id,
-        content: response.data.choices[0].message.content,
-        finish_reason: response.data.choices[0].finish_reason,
-        usage: response.data.usage,
+        id: data.id,
+        content: ans.message.content,
+        finish_reason: ans.finish_reason,
+        usage: data.usage,
       };
     }
 
@@ -87,7 +94,7 @@ export class OpenaiService {
       let rId: string;
       let rContent = '';
       let rFinishReason: string;
-      const rPromptTokens = sumTokenLength();
+      const rPromptTokens = sumTokenSize();
       let rCompletionTokens = 0;
 
       response.data.on('data', (buffer: Buffer) => {
@@ -104,6 +111,7 @@ export class OpenaiService {
           if (json.choices[0].finish_reason) {
               rFinishReason = json.choices[0].finish_reason;
               subject.next({
+                id: rId,
                 finish_reason: rFinishReason,
               });
           }
@@ -113,7 +121,7 @@ export class OpenaiService {
           subject.next({
             id: rId,
             delta: json.choices[0].delta.content,
-            finish_reason: rFinishReason,
+            finish_reason: null
           });
         } catch {}
       });
@@ -134,8 +142,8 @@ export class OpenaiService {
     });
   }
 
-  tokenizer(message: string) {
-    const enc = get_encoding('cl100k_base');
+  tokenizer(message: string, encodeName: TiktokenEncoding = 'cl100k_base') {
+    const enc = get_encoding(encodeName);
     return enc.encode(`${message}<|im_end|>`);
   }
 }

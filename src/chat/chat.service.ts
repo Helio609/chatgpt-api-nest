@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ReplaySubject } from 'rxjs';
-import { OpenaiService, StreamData } from 'src/openai/openai.service';
+import { OpenAIService, StreamData } from 'src/openai/openai.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -13,7 +13,7 @@ declare module 'src/openai/openai.service' {
 @Injectable()
 export class ChatService {
   constructor(
-    private readonly openai: OpenaiService,
+    private readonly openai: OpenAIService,
     private readonly prisma: PrismaService,
   ) {}
 
