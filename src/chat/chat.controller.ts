@@ -1,6 +1,7 @@
 import { Controller } from '@nestjs/common';
 import {
   Body,
+  Delete,
   Get,
   Param,
   Post,
@@ -95,5 +96,10 @@ export class ChatController {
   @Get('sessions')
   getSessionId(@CurrentUser() user, @Query('page') page: number, @Query('take') take: number) {
     return this.chatService.getSessionIds(user.sub, page, take)
+  }
+
+  @Delete('session/:id')
+  removeSessionById(@Param('id') sessionId: string) {
+    return this.chatService.removeSessionById(sessionId)
   }
 }

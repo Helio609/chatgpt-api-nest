@@ -75,4 +75,8 @@ export class ChatService {
     const sessionId = (await this.prisma.session.findMany({ where: { user_id: userId }, skip: (page - 1) * take, take })).flatMap(session => session.id)
     return { session_ids: sessionId }
   }
+
+  async removeSessionById(sessionId: string) {
+    return await this.prisma.session.delete({ where: { id: sessionId } })
+  }
 }
