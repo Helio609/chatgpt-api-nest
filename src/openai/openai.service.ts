@@ -23,7 +23,7 @@ export interface StreamData {
 
 @Injectable()
 export class OpenAIService {
-  constructor(private readonly http: HttpService) {}
+  constructor(private readonly http: HttpService) { }
 
   async sendMessages(
     messages: { role: string; content: string }[],
@@ -37,12 +37,8 @@ export class OpenAIService {
     /** the message chain should be sorted in root -> chat_1 -> chat_2 -> ... */
 
     /** encoding for gpt-3.5 */
-    const enc = get_encoding('cl100k_base');
-    const getTokenSize = (content: string) =>
-    /** tested, it's equal to prompt token size which openai api returns */
-      enc.encode(`${content}<|im_end|>`).length;
     const tokenSize = messages.map((message) =>
-      getTokenSize(message.content),
+      this.tokenizer(message.content).length,
     );
     const sumTokenSize = () =>
       tokenSize.reduce(
@@ -71,6 +67,11 @@ export class OpenAIService {
       },
       responseType: stream ? 'stream' : 'json',
       validateStatus: () => true,
+      proxy: {
+        host: '127.0.0.1',
+        port: 7890,
+        protocol: 'http'
+      }
     });
 
     /** TODO: there have many error type when openai server returns status code != 200 */
@@ -109,11 +110,11 @@ export class OpenAIService {
           const json = JSON.parse(data);
           if (!rId) rId = json.id;
           if (json.choices[0].finish_reason) {
-              rFinishReason = json.choices[0].finish_reason;
-              subject.next({
-                id: rId,
-                finish_reason: rFinishReason,
-              });
+            rFinishReason = json.choices[0].finish_reason;
+            subject.next({
+              id: rId,
+              finish_reason: rFinishReason,
+            });
           }
           if (!json.choices[0].delta.content) return;
           rContent += json.choices[0].delta.content;
@@ -123,7 +124,7 @@ export class OpenAIService {
             delta: json.choices[0].delta.content,
             finish_reason: null
           });
-        } catch {}
+        } catch { }
       });
 
       response.data.on('end', () => {
