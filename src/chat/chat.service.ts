@@ -15,7 +15,7 @@ export class ChatService {
   constructor(
     private readonly openai: OpenAIService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async process(
     userId: number,
@@ -29,6 +29,7 @@ export class ChatService {
     });
     sessionId = sessionId ?? uuidv4();
 
+    /** TODO: avoid using the type StreamData and avoid using subject in this function */
     /** first thing is pass the session id to client */
     subject.next({
       session_id: sessionId,
@@ -64,5 +65,14 @@ export class ChatService {
       session_id: sessionId,
       ...response,
     };
+  }
+
+  /**
+   * return all the session
+   * @param userId
+   */
+  async getSessionIds(userId: number, page: number = 1, take: number = 5) {
+    const sessionId = (await this.prisma.session.findMany({ where: { user_id: userId }, skip: (page - 1) * take, take })).flatMap(session => session.id)
+    return { session_ids: sessionId }
   }
 }

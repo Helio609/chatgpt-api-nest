@@ -1,8 +1,10 @@
 import { Controller } from '@nestjs/common';
 import {
   Body,
+  Get,
   Param,
   Post,
+  Query,
   Res,
   Sse,
   UseGuards,
@@ -28,7 +30,7 @@ declare module 'src/openai/openai.service' {
 @Controller('chat')
 @UseGuards(AuthGuard('jwt'))
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(private readonly chatService: ChatService) { }
 
   private responseStream: {
     request_id?: string;
@@ -87,5 +89,11 @@ export class ChatController {
     } else {
       return new Observable();
     }
+
+  }
+
+  @Get('sessions')
+  getSessionId(@CurrentUser() user, @Query('page') page: number, @Query('take') take: number) {
+    return this.chatService.getSessionIds(user.sub, page, take)
   }
 }
