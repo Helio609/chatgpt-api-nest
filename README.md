@@ -4,6 +4,10 @@ Hi there,
 
 This is a ChatGPT back-end written based on NestJS, which supports basic user registration and login, as well as JWT authentication, and supports two types of transmission modes.
 
+This server implementation includes the storage of historical conversation data and supports handling when tokens exceed the limit. The details can be found in `openai.service.ts`. By default, 1000 tokens are kept for responses, but if using GPT-4, the range can be adjusted as needed.
+
+Here is a brief introduction to two common transmission methods:
+
 1. Streaming transmission. After requesting the interface, RequestId is returned. Then use this Id to request the SSE interface to obtain the Token stream, in the format below.
 
 ```typescript
@@ -41,7 +45,8 @@ This is a ChatGPT back-end written based on NestJS, which supports basic user re
 ## Usage
 
 1. Modify the database configuration and initial OpenAi Api Key configuration in `.env.example` and change its name to `.env`.
-2. Install dependencies and synchronize database models.
+2. Prepare the Postgres database.
+3. Install dependencies and synchronize database models.
 
 ```shell
 yarn && prisma migrate dev
