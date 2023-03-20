@@ -102,4 +102,9 @@ export class ChatController {
   removeSessionById(@Param('id') sessionId: string) {
     return this.chatService.removeSessionById(sessionId)
   }
+
+  @Get('history/:id')
+  getChatHistoryBySessionId(sessionId: string) {
+    return this.chatService.getChatHistoryBySessionId(sessionId)
+  }
 }

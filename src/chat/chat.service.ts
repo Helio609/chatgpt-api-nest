@@ -79,4 +79,8 @@ export class ChatService {
   async removeSessionById(sessionId: string) {
     return await this.prisma.session.delete({ where: { id: sessionId } })
   }
+
+  async getChatHistoryBySessionId(sessionId: string) {
+    return { messages: (await this.prisma.session.findUnique({ where: { id: sessionId } })).messages }
+  }
 }
