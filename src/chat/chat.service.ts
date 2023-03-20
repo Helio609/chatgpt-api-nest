@@ -41,7 +41,7 @@ export class ChatService {
     /** check the session exist or create it */
     const session = await this.prisma.session.upsert({
       where: { id: sessionId },
-      create: { messages: [], user_id: userId, id: sessionId },
+      create: { user_id: userId, id: sessionId, messages: [], chat_name: message.substring(0, 10) },
       update: {},
     });
 
@@ -72,7 +72,7 @@ export class ChatService {
    * @param userId
    */
   async getSessionIds(userId: number, page: number = 1, take: number = 5) {
-    const sessionId = (await this.prisma.session.findMany({ where: { user_id: userId }, skip: (page - 1) * take, take })).flatMap(session => session.id)
+    const sessionId = (await this.prisma.session.findMany({ where: { user_id: userId }, skip: (page - 1) * take, take })).flatMap(session => { return { id: session.id, chat_name: session.chat_name } })
     return { session_ids: sessionId }
   }
 
@@ -81,6 +81,6 @@ export class ChatService {
   }
 
   async getChatHistoryBySessionId(sessionId: string) {
-    return await this.prisma.session.findUnique({ where: { id: sessionId }, select: { id: true, messages: true } })
+    return await this.prisma.session.findUnique({ where: { id: sessionId }, select: { id: true, chat_name: true, messages: true } })
   }
 }
