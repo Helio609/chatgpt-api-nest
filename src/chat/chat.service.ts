@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ReplaySubject } from 'rxjs';
-import { OpenAIService, StreamData } from 'src/openai/openai.service';
+import { OpenaiResponse, OpenAIService, StreamData } from 'src/openai/openai.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { v4 as uuidv4 } from 'uuid';
 
 declare module 'src/openai/openai.service' {
   export interface StreamData {
     session_id?: string;
+    error?: string
   }
 }
 
@@ -47,13 +48,21 @@ export class ChatService {
 
     /** add the user message to message chain */
     session.messages.push({ role: 'user', content: message });
-    const response = await this.openai.sendMessages(
-      session.messages as { role: string; content: string }[],
-      config.openai_key,
-      config.model,
-      stream,
-      subject,
-    );
+    let response: OpenaiResponse
+    try {
+      response = await this.openai.sendMessages(
+        session.messages as { role: string; content: string }[],
+        config.openai_key,
+        config.model,
+        stream,
+        subject,
+      );
+    } catch {
+      subject.next({
+        error: 'Something went wrong, please try again'
+      });
+      subject.complete()
+    }
     session.messages.push({ role: 'assistant', content: response.content });
     /** update the message chain */
     await this.prisma.session.update({
