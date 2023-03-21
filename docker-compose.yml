@@ -12,6 +12,17 @@ services:
       POSTGRES_DB: chatgpt
     ports:
       - "5432:5432"
+  
+  chatgpt-api-nest:
+    image: erohal/chatgpt-api-nest
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://root:root@db:5432/chatgpt?schema=public
+      JWT_SECRET: iloveyoubaby
+      OPENAI_BASE_URL: https://api.openai.com
+      OPENAI_INIT_KEY: 
+    ports:
+      - "3000:3000"
 
   adminer:
     image: adminer
