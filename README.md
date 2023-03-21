@@ -54,6 +54,11 @@ yarn && prisma migrate dev
 
 3. Start `next dev` or `next build && next start`. The default working port is 3000.
 
+## Docker
+
+1. Use `docker build -t erohal/chatgpt-api-nest:latest` to build the container.
+2. Start the container using `docker-compose -f docker-compose.yml`.
+
 ## Interfaces
 
 1. POST /auth/login
