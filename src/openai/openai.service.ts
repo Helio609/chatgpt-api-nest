@@ -29,7 +29,7 @@ export interface StreamData {
 
 @Injectable()
 export class OpenAIService {
-  constructor(private readonly http: HttpService) { }
+  constructor(private readonly http: HttpService) {}
 
   async sendMessages(
     messages: { role: string; content: string }[],
@@ -43,8 +43,8 @@ export class OpenAIService {
     /** the message chain should be sorted in root -> chat_1 -> chat_2 -> ... */
 
     /** encoding for gpt-3.5 */
-    const tokenSize = messages.map((message) =>
-      this.tokenizer(message.content).length,
+    const tokenSize = messages.map(
+      (message) => this.tokenizer(message.content).length,
     );
     const sumTokenSize = () =>
       tokenSize.reduce(
@@ -82,8 +82,8 @@ export class OpenAIService {
       );
 
     if (!stream) {
-      const data = response.data
-      const ans = data.choices[0]
+      const data = response.data;
+      const ans = data.choices[0];
       return {
         id: data.id,
         content: ans.message.content,
@@ -119,9 +119,9 @@ export class OpenAIService {
           subject.next({
             id: rId,
             delta: json.choices[0].delta.content,
-            finish_reason: null
+            finish_reason: null,
           });
-        } catch { }
+        } catch {}
       });
 
       response.data.on('end', () => {
@@ -135,9 +135,9 @@ export class OpenAIService {
             total_tokens: rPromptTokens + rCompletionTokens,
           },
         };
-        subject.next(lastChunk)
+        subject.next(lastChunk);
         subject.complete();
-        return lastChunk;
+        resolve(lastChunk);
       });
     });
   }
