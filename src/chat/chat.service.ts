@@ -32,7 +32,7 @@ export class ChatService {
 
     /** TODO: avoid using the type StreamData and avoid using subject in this function */
     /** first thing is pass the session id to client */
-    subject.next({
+    subject?.next({
       session_id: sessionId,
       id: null,
       delta: null,
@@ -58,10 +58,13 @@ export class ChatService {
         subject,
       );
     } catch {
-      subject.next({
+      subject?.next({
         error: 'Something went wrong, please try again'
       });
-      subject.complete()
+      subject?.complete()
+      return {
+        error: 'something went wrong, please try again'
+      }
     }
     session.messages.push({ role: 'assistant', content: response.content });
     /** update the message chain */

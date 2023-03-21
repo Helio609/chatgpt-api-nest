@@ -40,7 +40,6 @@ export class ChatController {
 
   @Post('process')
   process(
-    @Res() res,
     @CurrentUser() user,
     @Body() dto: { session_id?: string; message: string; stream?: boolean },
   ) {
@@ -51,7 +50,7 @@ export class ChatController {
       dto.message,
       dto.session_id,
       dto.stream,
-      subject,
+      dto.stream ? subject : null,
     );
     if (dto.stream) {
       subject.pipe(take(1)).subscribe((data) => {
@@ -63,7 +62,7 @@ export class ChatController {
             response.request_id != requestId;
           });
         }, 3600 * 1000);
-        res.json({ session_id: data.session_id, request_id: requestId });
+        return { session_id: data.session_id, request_id: requestId };
       });
     } else {
       return response;
