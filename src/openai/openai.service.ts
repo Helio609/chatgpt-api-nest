@@ -18,7 +18,13 @@ export interface StreamData {
   id?: string;
   delta?: string;
   /** only avalible in the last chunk of the stream */
+  content?: string;
   finish_reason?: string;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
 }
 
 @Injectable()
@@ -106,10 +112,6 @@ export class OpenAIService {
           if (!rId) rId = json.id;
           if (json.choices[0].finish_reason) {
             rFinishReason = json.choices[0].finish_reason;
-            subject.next({
-              id: rId,
-              finish_reason: rFinishReason,
-            });
           }
           if (!json.choices[0].delta.content) return;
           rContent += json.choices[0].delta.content;
@@ -123,8 +125,7 @@ export class OpenAIService {
       });
 
       response.data.on('end', () => {
-        subject.complete();
-        resolve({
+        const lastChunk = {
           id: rId,
           content: rContent,
           finish_reason: rFinishReason,
@@ -133,7 +134,10 @@ export class OpenAIService {
             completion_tokens: rCompletionTokens,
             total_tokens: rPromptTokens + rCompletionTokens,
           },
-        });
+        };
+        subject.next(lastChunk)
+        subject.complete();
+        return lastChunk;
       });
     });
   }
