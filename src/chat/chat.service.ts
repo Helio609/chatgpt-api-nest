@@ -1,13 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { ReplaySubject } from 'rxjs';
-import { OpenaiResponse, OpenAIService, StreamData } from 'src/openai/openai.service';
+import {
+  OpenaiResponse,
+  OpenAIService,
+  StreamData,
+} from 'src/openai/openai.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { v4 as uuidv4 } from 'uuid';
 
 declare module 'src/openai/openai.service' {
   export interface StreamData {
     session_id?: string;
-    error?: string
+    error?: string;
   }
 }
 
@@ -16,7 +20,7 @@ export class ChatService {
   constructor(
     private readonly openai: OpenAIService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   async process(
     userId: number,
@@ -42,13 +46,18 @@ export class ChatService {
     /** check the session exist or create it */
     const session = await this.prisma.session.upsert({
       where: { id: sessionId },
-      create: { user_id: userId, id: sessionId, messages: [], chat_name: message.substring(0, 10) },
+      create: {
+        user_id: userId,
+        id: sessionId,
+        messages: [],
+        chat_name: message.substring(0, 10),
+      },
       update: {},
     });
 
     /** add the user message to message chain */
     session.messages.push({ role: 'user', content: message });
-    let response: OpenaiResponse
+    let response: OpenaiResponse;
     try {
       response = await this.openai.sendMessages(
         session.messages as { role: string; content: string }[],
@@ -59,12 +68,12 @@ export class ChatService {
       );
     } catch {
       subject?.next({
-        error: 'Something went wrong, please try again'
+        error: 'Something went wrong, please try again',
       });
-      subject?.complete()
+      subject?.complete();
       return {
-        error: 'something went wrong, please try again'
-      }
+        error: 'something went wrong, please try again',
+      };
     }
     session.messages.push({ role: 'assistant', content: response.content });
     /** update the message chain */
@@ -83,16 +92,27 @@ export class ChatService {
    * return all the session
    * @param userId
    */
-  async getSessionIds(userId: number, page: number = 1, take: number = 5) {
-    const sessionId = (await this.prisma.session.findMany({ where: { user_id: userId }, skip: (page - 1) * take, take })).flatMap(session => { return { id: session.id, chat_name: session.chat_name } })
-    return { session_ids: sessionId }
+  async getSessionIds(userId: number, page = 1, take = 5) {
+    const sessionId = (
+      await this.prisma.session.findMany({
+        where: { user_id: userId },
+        skip: (page - 1) * take,
+        take,
+      })
+    ).flatMap((session) => {
+      return { id: session.id, chat_name: session.chat_name };
+    });
+    return { session_ids: sessionId };
   }
 
   async removeSessionById(sessionId: string) {
-    return await this.prisma.session.delete({ where: { id: sessionId } })
+    return await this.prisma.session.delete({ where: { id: sessionId } });
   }
 
   async getChatHistoryBySessionId(sessionId: string) {
-    return await this.prisma.session.findUnique({ where: { id: sessionId }, select: { id: true, chat_name: true, messages: true } })
+    return await this.prisma.session.findUnique({
+      where: { id: sessionId },
+      select: { id: true, chat_name: true, messages: true },
+    });
   }
 }

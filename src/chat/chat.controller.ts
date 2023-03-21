@@ -6,7 +6,6 @@ import {
   Param,
   Post,
   Query,
-  Res,
   Sse,
   UseGuards,
 } from '@nestjs/common/decorators';
@@ -31,7 +30,7 @@ declare module 'src/openai/openai.service' {
 @Controller('chat')
 @UseGuards(AuthGuard('jwt'))
 export class ChatController {
-  constructor(private readonly chatService: ChatService) { }
+  constructor(private readonly chatService: ChatService) {}
 
   private responseStream: {
     request_id?: string;
@@ -89,21 +88,24 @@ export class ChatController {
     } else {
       return new Observable();
     }
-
   }
 
   @Get('sessions')
-  getSessionId(@CurrentUser() user, @Query('page') page: number, @Query('take') take: number) {
-    return this.chatService.getSessionIds(user.sub, page, take)
+  getSessionId(
+    @CurrentUser() user,
+    @Query('page') page: number,
+    @Query('take') take: number,
+  ) {
+    return this.chatService.getSessionIds(user.sub, page, take);
   }
 
   @Delete('session/:id')
   removeSessionById(@Param('id') sessionId: string) {
-    return this.chatService.removeSessionById(sessionId)
+    return this.chatService.removeSessionById(sessionId);
   }
 
   @Get('history/:id')
   getChatHistoryBySessionId(@Param('id') sessionId: string) {
-    return this.chatService.getChatHistoryBySessionId(sessionId)
+    return this.chatService.getChatHistoryBySessionId(sessionId);
   }
 }
