@@ -20,7 +20,7 @@ export class ChatService {
   constructor(
     private readonly openai: OpenAIService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async process(
     userId: number,
@@ -79,7 +79,7 @@ export class ChatService {
     /** update the message chain */
     await this.prisma.session.update({
       where: { id: sessionId },
-      data: { messages: session.messages },
+      data: { messages: session.messages, token: response.usage.total_tokens },
     });
 
     return {
@@ -112,7 +112,7 @@ export class ChatService {
   async getChatHistoryBySessionId(sessionId: string) {
     return await this.prisma.session.findUnique({
       where: { id: sessionId },
-      select: { id: true, chat_name: true, messages: true },
+      select: { id: true, chat_name: true, messages: true, token: true },
     });
   }
 }
