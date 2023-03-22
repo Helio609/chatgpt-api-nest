@@ -20,7 +20,7 @@ export class ChatService {
   constructor(
     private readonly openai: OpenAIService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   async process(
     userId: number,

@@ -24,4 +24,18 @@ export class UserService {
     });
     return { sub: user.id, username: user.username };
   }
+
+  async getConfig(userId: number) {
+    return await this.prisma.config.findUnique({ where: { user_id: userId } });
+  }
+
+  async setConfig(
+    userId: number,
+    config: { openai_key: string; model: string },
+  ) {
+    return await this.prisma.config.update({
+      where: { user_id: userId },
+      data: config,
+    });
+  }
 }
