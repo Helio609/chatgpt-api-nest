@@ -1,4 +1,3 @@
-# Use postgres/example user/password credentials
 version: '3.1'
 
 services:
@@ -10,19 +9,23 @@ services:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: root
       POSTGRES_DB: chatgpt
-    ports:
-      - "5432:5432"
+      TZ: Asia/Shanghai
+    volumes:
+      - /var/lib/postgresql/data
   
-  chatgpt-api-nest:
-    image: erohal/chatgpt-api-nest
+  service:
+    image: chatgpt-api-nest
     restart: always
     environment:
-      DATABASE_URL: postgresql://root:root@db:5432/chatgpt?schema=public
-      JWT_SECRET: iloveyoubaby
-      OPENAI_BASE_URL: https://api.openai.com
-      OPENAI_INIT_KEY: 
+      - TZ: Asia/Shanghai
+      - DATABASE_URL: "postgresql://root:root@db:5432/chatgpt?schema=public"
+      - OPENAI_BASE_URL: https://api.openai.com
+      - OPENAI_INIT_KEY: "sk-ZZZZXXXXIIIIOOOOUUUUT3BlbkFJUj3WkGPPPP0JW67RQQQQ"
+      - JWT_SECRET: iloveyoubaby
     ports:
-      - "3000:3000"
+      - 3000:3000
+    depends_on:
+      - db
 
   adminer:
     image: adminer

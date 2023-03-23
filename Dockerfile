@@ -1,20 +1,23 @@
-FROM node:lts-alpine
-
-ENV DATABASE_URL=
-ENV JWT_SECRET=iloveyoubaby
-ENV OPENAI_BASE_URL=https://api.openai.com
-ENV OPENAI_INIT_KEY=
+FROM node:lts-alpine AS builder
 
 WORKDIR /app
 
 COPY ./package.json /app
 
-RUN npm install
+RUN npm install --production
 
 COPY . /app
 
-RUN npx prisma generate && npm run build
+RUN npm run build
 
-ENTRYPOINT ["/bin/sh", "-c", "npx prisma db push && npm run start:prod" ]
+FROM node:lts
+
+WORKDIR /app
+
+COPY --from=builder /app/dist /app/dist
+COPY --from=builder /app/node_modules /app/node_modules
+COPY ./package.json /app
 
 EXPOSE 3000
+
+CMD [ "/bin/sh", "-c", "npm run start:prod" ]
