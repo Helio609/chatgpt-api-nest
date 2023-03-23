@@ -2,42 +2,19 @@ import { get_encoding, TiktokenEncoding } from '@dqbd/tiktoken';
 import { Injectable } from '@nestjs/common';
 import { ReplaySubject } from 'rxjs';
 import { HttpService } from 'src/http/http.service';
-
-export type OpenaiResponse = {
-  id: string;
-  content: string;
-  finish_reason: string;
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-};
-
-export interface StreamData {
-  id?: string;
-  delta?: string;
-  /** only avalible in the last chunk of the stream */
-  content?: string;
-  finish_reason?: string;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-}
+import { Messages, OpenAIResponse, StreamData } from './typings';
 
 @Injectable()
 export class OpenAIService {
   constructor(private readonly http: HttpService) {}
 
   async sendMessages(
-    messages: { role: string; content: string }[],
+    messages: Messages,
     apiKey: string,
     model: string,
     stream = false,
     subject?: ReplaySubject<StreamData>,
-  ): Promise<OpenaiResponse> {
+  ): Promise<OpenAIResponse> {
     /** parpare the messages array to fit the token limit */
     /** perserve 1000 token for answering and 3000 token for the history */
     /** the message chain should be sorted in root -> chat_1 -> chat_2 -> ... */
@@ -68,7 +45,7 @@ export class OpenAIService {
       },
       data: {
         model,
-        messages,
+        messages: messages.map(({ role, content }) => ({ role, content })),
         stream,
       },
       responseType: stream ? 'stream' : 'json',
@@ -119,7 +96,6 @@ export class OpenAIService {
           subject.next({
             id: rId,
             delta: json.choices[0].delta.content,
-            finish_reason: null,
           });
         } catch {}
       });
