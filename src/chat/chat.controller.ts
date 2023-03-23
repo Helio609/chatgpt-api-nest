@@ -1,68 +1,55 @@
-import { Controller } from '@nestjs/common';
 import {
   Body,
+  Controller,
   Delete,
   Get,
   Param,
   Post,
-  Query,
   Sse,
   UseGuards,
-} from '@nestjs/common/decorators';
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { map, Observable, ReplaySubject, skip, take } from 'rxjs';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { firstValueFrom, map, Observable, ReplaySubject, skip } from 'rxjs';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { StreamData } from 'src/openai/typings';
 import { ChatService } from './chat.service';
+import { SendMessageDto } from './dto/send-message.dto';
 import { v4 as uuidv4 } from 'uuid';
-import { StreamData } from 'src/openai/openai.service';
+import { SetSystemMessageDto } from './dto/set-system-message.dto';
 
 export interface MessageEvent {
   data: string | object;
   type?: string;
 }
 
-declare module 'src/openai/openai.service' {
-  export interface StreamData {
-    request_id?: string;
-  }
-}
-
-@Controller('chat')
+@ApiTags('chat')
+@ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
+@Controller('chat')
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  private responseStream: {
-    request_id?: string;
+  private requestStream: {
+    requestId: string;
     subject: ReplaySubject<StreamData>;
   }[] = [];
 
   @Post('process')
-  process(
-    @CurrentUser() user,
-    @Body() dto: { session_id?: string; message: string; stream?: boolean },
-  ) {
-    /** if stream is enabled, it should return the session_id and responseId */
-    const subject: ReplaySubject<StreamData> = new ReplaySubject();
-    const response = this.chatService.process(
-      user.sub,
-      dto.message,
-      dto.session_id,
-      dto.stream,
-      dto.stream ? subject : null,
-    );
+  async process(@CurrentUser() user, @Body() dto: SendMessageDto) {
+    const subject = dto.stream ? new ReplaySubject<StreamData>() : null;
+    const response = this.chatService.process(user.sub, dto, subject);
     if (dto.stream) {
-      subject.pipe(take(1)).subscribe((data) => {
-        const requestId = uuidv4();
-        this.responseStream.push({ request_id: requestId, subject });
-        setTimeout(() => {
-          /** delete the stream object */
-          this.responseStream = this.responseStream.filter((response) => {
-            response.request_id != requestId;
-          });
-        }, 3600 * 1000);
-        return { session_id: data.session_id, request_id: requestId };
-      });
+      /** get the first chunk contains session_id */
+      const requestId = uuidv4();
+      const value = await firstValueFrom(subject);
+      this.requestStream.push({ requestId, subject });
+      setTimeout(() => {
+        this.requestStream = this.requestStream.filter(
+          (request) => request.requestId != requestId,
+        );
+      }, 60 * 10 * 1000);
+      return { session_id: value.session_id, request_id: requestId };
     } else {
       return response;
     }
@@ -70,42 +57,46 @@ export class ChatController {
 
   @Sse('process/:requestId')
   sse(@Param('requestId') requestId: string): Observable<MessageEvent> {
-    const observable = this.responseStream
-      .find((stream) => stream.request_id == requestId)
+    const observable = this.requestStream
+      .find((stream) => stream.requestId == requestId)
       ?.subject?.asObservable();
     if (observable) {
-      observable.subscribe({
-        complete: () => {
-          /** remove the response item */
-          this.responseStream = this.responseStream.filter((response) => {
-            response.request_id != requestId;
-          });
-        },
-      });
       return observable
         .pipe(skip(1))
         .pipe(map((payload) => ({ data: payload })));
     } else {
-      return new Observable();
+      return new Observable((subscribe) => {
+        subscribe.next({ data: { error: 'No such request id' } });
+        subscribe.complete();
+      });
     }
   }
 
   @Get('sessions')
-  getSessionId(
-    @CurrentUser() user,
-    @Query('page') page: number,
-    @Query('take') take: number,
+  getSessions(@CurrentUser() user) {
+    return this.chatService.getSessions(user.sub);
+  }
+
+  @Get('session/:sessionId')
+  getSession(@Param('sessionId') sessionId: string) {
+    return this.chatService.getSession(sessionId);
+  }
+
+  @Delete('session/:sessionId')
+  removeSession(@Param('sessionId') sessionId: string) {
+    return this.chatService.removeSession(sessionId);
+  }
+
+  @Delete('remove/:sessionId/:chatId')
+  removeMessage(
+    @Param('sessionId') sessionId: string,
+    @Param('chatId') chatId: string,
   ) {
-    return this.chatService.getSessionIds(user.sub, page, take);
+    return this.chatService.removeMessage(sessionId, chatId);
   }
 
-  @Delete('session/:id')
-  removeSessionById(@Param('id') sessionId: string) {
-    return this.chatService.removeSessionById(sessionId);
-  }
-
-  @Get('history/:id')
-  getChatHistoryBySessionId(@Param('id') sessionId: string) {
-    return this.chatService.getChatHistoryBySessionId(sessionId);
+  @Post('system_message')
+  setSystemMessage(@Body() dto: SetSystemMessageDto) {
+    return this.chatService.setSystemMessage(dto.session_id, dto.message);
   }
 }
