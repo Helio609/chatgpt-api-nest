@@ -12,6 +12,7 @@ model User {
   username  String   @unique
   password  String
   createdAt DateTime @default(now())
+  token     Int      @default(0)
 
   config   Config?
   sessions Session[]
@@ -35,7 +36,7 @@ model Session {
   user_id   Int
   chat_name String
   messages  Json[]
-  token     Int @default(0)
+  token     Int    @default(0)
 
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
