@@ -8,7 +8,7 @@ This server implementation includes the storage of historical conversation data 
 
 ## Instructions
 
-1. Direct deployment: Prepare a Postgres database, modify the database configuration in `.env.example`, rename it to `.env`, and start with `npm run build && npm run start:prod`.
+1. Direct deployment: Prepare a Postgres database, modify the database configuration in `.env.example`, rename it to `.env`, and start with `npm && npx prisma db push && npx prisma generate && npm run build && npm run start:prod`.
 2. Docker deployment: Modify the configuration in `docker-compose.yml`.
 
 ```
