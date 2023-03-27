@@ -14,7 +14,7 @@ services:
       - /var/lib/postgresql/data
   
   service:
-    image: chatgpt-api-nest
+    build: .
     restart: always
     environment:
       - TZ: Asia/Shanghai
@@ -30,5 +30,7 @@ services:
   adminer:
     image: adminer
     restart: always
+    environment:
+      - TZ: Asia/Shanghai
     ports:
       - 8080:8080
